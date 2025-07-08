@@ -9,19 +9,19 @@ const CameraPlane = ({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
   const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
 
   useEffect(() => {
-    console.log('CameraPlane: useEffect開始');
-    console.log('videoRef.current:', videoRef.current);
+    // console.log('CameraPlane: useEffect開始');
+    // console.log('videoRef.current:', videoRef.current);
     
     if (videoRef.current) {
-      console.log('videoRef.current.videoWidth:', videoRef.current.videoWidth);
-      console.log('videoRef.current.videoHeight:', videoRef.current.videoHeight);
-      console.log('videoRef.current.readyState:', videoRef.current.readyState);
+      // console.log('videoRef.current.videoWidth:', videoRef.current.videoWidth);
+      // console.log('videoRef.current.videoHeight:', videoRef.current.videoHeight);
+      // console.log('videoRef.current.readyState:', videoRef.current.readyState);
       
       const texture = new THREE.VideoTexture(videoRef.current);
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
       
-      console.log('VideoTexture作成完了:', texture);
+      // console.log('VideoTexture作成完了:', texture);
       setVideoTexture(texture);
     }
   }, [videoRef, videoRef.current?.readyState]); // readyStateも監視
@@ -33,10 +33,10 @@ const CameraPlane = ({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
     }
   });
 
-  console.log('CameraPlane: render, videoTexture:', videoTexture);
+  // console.log('CameraPlane: render, videoTexture:', videoTexture);
 
   if (!videoTexture) {
-    console.log('videoTextureがnullのため何も表示しません');
+    // console.log('videoTextureがnullのため何も表示しません');
     return null;
   }
 
@@ -55,8 +55,8 @@ function App() {
 
   const startCamera = async () => {
     try {
-      console.log('カメラ開始試行中...');
-      setDebugInfo('カメラアクセス中...');
+      // console.log('カメラ開始試行中...');
+      // setDebugInfo('カメラアクセス中...');
       
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: {
@@ -65,32 +65,32 @@ function App() {
         }
       });
       
-      console.log('ストリーム取得成功:', stream);
-      console.log('ビデオトラック:', stream.getVideoTracks());
+      // console.log('ストリーム取得成功:', stream);
+      // console.log('ビデオトラック:', stream.getVideoTracks());
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         
         // loadedmetadataイベントを待つ
         videoRef.current.addEventListener('loadedmetadata', () => {
-          console.log('メタデータ読み込み完了');
-          console.log('ビデオサイズ:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
+          // console.log('メタデータ読み込み完了');
+          // console.log('ビデオサイズ:', videoRef.current?.videoWidth, 'x', videoRef.current?.videoHeight);
           setDebugInfo(`ビデオサイズ: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`);
         });
 
         // canplayイベントを待つ
         videoRef.current.addEventListener('canplay', () => {
-          console.log('ビデオ再生可能');
+          // console.log('ビデオ再生可能');
           setIsStreaming(true);
         });
 
         // エラーハンドリング
         videoRef.current.addEventListener('error', (e) => {
-          console.error('ビデオエラー:', e);
-          setDebugInfo('ビデオエラーが発生しました');
+          // console.error('ビデオエラー:', e);
+          // setDebugInfo('ビデオエラーが発生しました');
         });
         
-        console.log('ビデオ要素にストリーム設定完了');
+        // console.log('ビデオ要素にストリーム設定完了');
       }
     } catch (error) {
       console.error('カメラアクセスエラー:', error);
