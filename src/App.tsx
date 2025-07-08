@@ -1,4 +1,3 @@
-// src/App.tsx - デバッグ版
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -41,7 +40,10 @@ const CameraPlane = ({ videoRef }: { videoRef: React.RefObject<HTMLVideoElement 
   }
 
   return (
-    <mesh ref={meshRef}>
+    <mesh 
+       ref={meshRef}
+       scale={[-1,1,1]} // カメラ反転
+    >
       <planeGeometry args={[4, 3]} />
       <meshBasicMaterial map={videoTexture} />
     </mesh>
@@ -187,7 +189,7 @@ function App() {
         )}
       </div>
       
-      {/* デバッグ情報 */}
+      {/* デバッグ情報
       <div style={{
         position: 'absolute',
         top: '20px',
@@ -204,7 +206,7 @@ function App() {
         <div>デバッグ: {debugInfo}</div>
         <div>ビデオ要素: {videoRef.current ? 'あり' : 'なし'}</div>
         <div>readyState: {videoRef.current?.readyState}</div>
-      </div>
+      </div> */}
     </div>
   );
 }
