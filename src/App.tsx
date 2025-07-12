@@ -2,11 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getEffect, getEffectList } from './shaders';
-// Media Pipe Hands
-import { Hands } from '@mediapipe/hands';
-import { Camera } from '@mediapipe/camera_utils';
-import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
-import { HAND_CONNECTIONS } from '@mediapipe/hands';
 
 // カメラ映像を表示するコンポーネント
 // GLSLのエフェクトを適用するため、Three.js(react-three-fiber)を使用
@@ -117,6 +112,7 @@ const CameraPlane = ({
 
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef2 = useRef<HTMLVideoElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
 
@@ -152,6 +148,9 @@ function App() {
           // initializeMediaPipe();
         });
       }
+      if (videoRef2.current){// mediaPipe用のVideoDOM
+        videoRef2.current.srcObject = stream;
+      }
     } catch (error) {
       // 4.エラーハンドリング 
       console.error('カメラアクセスエラー:', error);
@@ -166,6 +165,9 @@ function App() {
       videoRef.current.srcObject = null;
       setIsStreaming(false);
       setDebugInfo('カメラ停止');
+    }
+    if (videoRef2.current?.srcObject){
+      videoRef2.current.srcObject = null;
     }
   };
 
@@ -184,6 +186,23 @@ function App() {
           width: '160px',
           height: '90px',
           border: '2px solid red',
+          zIndex: 1000,
+          transform: 'scaleX(-1)'
+        }}
+      />
+
+      <video 
+        ref = {videoRef2}
+        autoPlay
+        muted
+        playsInline
+        style = {{
+          position: 'absolute',
+          top: '110px',
+          right: '10px',
+          width: '160px',
+          height: '90px',
+          border: '2px solid blue',
           zIndex: 1000,
           transform: 'scaleX(-1)'
         }}
