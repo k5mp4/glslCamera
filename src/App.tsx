@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getEffect, getEffectList } from './shaders';
+import { useMediaPipeHands } from './hooks/useMediaPipeHands';
 
 // カメラ映像を表示するコンポーネント
 // GLSLのエフェクトを適用するため、Three.js(react-three-fiber)を使用
@@ -115,6 +116,10 @@ function App() {
   const videoRef2 = useRef<HTMLVideoElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  // handlandmarkerテスト
+  const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
+  // デバッグ用
+  console.log('MediaPipe状態:', { handResults, isInitialized, error });
 
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
