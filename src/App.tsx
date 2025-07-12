@@ -3,6 +3,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getEffect, getEffectList } from './shaders';
 import { useMediaPipeHands } from './hooks/useMediaPipeHands';
+import { useHandDrawing } from './hooks/useHandDrawing'; // 新しく追加
 
 // カメラ映像を表示するコンポーネント
 // GLSLのエフェクトを適用するため、Three.js(react-three-fiber)を使用
@@ -114,12 +115,27 @@ const CameraPlane = ({
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoRef2 = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null); // ★ 新しく追加：手の骨格描画用Canvas
   const [isStreaming, setIsStreaming] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
+  
   // handlandmarkerテスト
   const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
-  // デバッグ用
-  // console.log('MediaPipe状態:', { handResults, isInitialized, error });
+  
+  // ★ 新しく追加：手の骨格描画フック
+  const { syncCanvasSize } = useHandDrawing({
+    canvasRef,
+    handResults,
+    isStreaming,
+    videoRef: videoRef2, // 描画用CanvasのサイズをvideoRef2に合わせる
+    drawingOptions: {
+      connectionColor: "#00FF00",
+      landmarkColor: "#FF0000",
+      connectionLineWidth: 3,
+      landmarkLineWidth: 2,
+      differentiateHands: true // 左右の手で色を分ける
+    }
+  });
   
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
@@ -150,11 +166,17 @@ function App() {
 
         videoRef.current.addEventListener('canplay', () => {
           setIsStreaming(true);// CameraPlaneのレンダリング
-          // initializeMediaPipe();
         });
       }
       if (videoRef2.current){// mediaPipe用のVideoDOM
         videoRef2.current.srcObject = stream;
+        
+        // ★ 新しく追加：videoRef2のメタデータ読み込み時にCanvasサイズを同期
+        videoRef2.current.addEventListener('loadedmetadata', () => {
+          setTimeout(() => {
+            syncCanvasSize(); // 少し遅延させてから実行
+          }, 100);
+        });
       }
     } catch (error) {
       // 4.エラーハンドリング 
@@ -196,22 +218,46 @@ function App() {
         }}
       />
 
-      <video 
-        ref = {videoRef2}
-        autoPlay
-        muted
-        playsInline
-        style = {{
-          position: 'absolute',
-          top: '110px',
-          right: '10px',
-          width: '160px',
-          height: '90px',
-          border: '2px solid blue',
-          zIndex: 1000,
-          transform: 'scaleX(-1)'
-        }}
-      />
+      {/* ★ 修正：videoRef2のスタイルを相対位置に変更 */}
+      <div style={{
+        position: 'absolute',
+        top: '110px',
+        right: '10px',
+        width: '160px',
+        height: '90px',
+        zIndex: 1000,
+      }}>
+        <video 
+          ref={videoRef2}
+          autoPlay
+          muted
+          playsInline
+          style={{
+            width: '100%',
+            height: '100%',
+            border: '2px solid blue',
+            transform: 'scaleX(-1)',
+            position: 'relative',
+            zIndex: 1
+          }}
+        />
+        
+        {/* ★ 新しく追加：手の骨格表示用Canvas */}
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'absolute',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            pointerEvents: 'none',
+            background: 'transparent',
+            zIndex: 2,
+            transform: 'scaleX(-1)' // videoと同じ向きに
+          }}
+        />
+      </div>
       
       {/* Canvas(メインの表示) */}
       <Canvas 
@@ -328,6 +374,16 @@ function App() {
           />
         </div>
         
+        {/* ★ 新しく追加：MediaPipe情報 */}
+        <div style={{ marginBottom: '15px' }}>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>手の検出</h3>
+          <div style={{ fontSize: '12px' }}>
+            <div>初期化: {isInitialized ? '✅' : '⏳'}</div>
+            <div>検出された手: {handResults?.landmarks?.length || 0}個</div>
+            {error && <div style={{ color: '#ff6b6b' }}>エラー: {error}</div>}
+          </div>
+        </div>
+        
         {/* デバッグ情報 */}
         <div style={{ 
           fontSize: '11px',
@@ -345,9 +401,11 @@ function App() {
               手{index + 1} - 手首: 
               x:{hand[0]?.x?.toFixed(2)} 
               y:{hand[0]?.y?.toFixed(2)}
+              {handResults.handednesses?.[index] && (
+                <span> ({handResults.handednesses[index][0].categoryName})</span>
+              )}
             </div>
           ))}
-
         </div>
       </div>
     </div>
