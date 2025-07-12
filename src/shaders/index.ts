@@ -1,8 +1,7 @@
-// src/shaders/index.ts
-
 // 1. wave.ts からエフェクトをインポート
 import { waveEffect, waveEffectInfo } from './effects/wave';
 import { glitchEffect, glitchEffectInfo } from './effects/glitch';
+import { distortionEffect, distortionEffectInfo } from './effects/distorsion';
 
 // 2. 基本のシェーダーテンプレート
 const createEffectShader = (effectCode: string): string => {
@@ -34,7 +33,7 @@ export interface EffectInfo {
 
 export interface Effect {
   info: EffectInfo;
-  fragmentShader: string;  // ← 完成したGLSLコード
+  fragmentShader: string;  // 完成したGLSLコード
 }
 
 // 4. 全エフェクトをまとめる
@@ -64,6 +63,10 @@ export const effects: Record<string, Effect> = {
   glitch: {
     info: glitchEffectInfo,
     fragmentShader: createEffectShader(glitchEffect)
+  },
+  distortion: {
+    info: distortionEffectInfo,
+    fragmentShader: createEffectShader(distortionEffect)
   }
 };
 

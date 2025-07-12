@@ -1,13 +1,15 @@
-// src/App.tsx
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-
-// 🔗 ここでshaders/index.tsから関数をインポート
 import { getEffect, getEffectList } from './shaders';
+// Media Pipe Hands
+import { Hands } from '@mediapipe/hands';
+import { Camera } from '@mediapipe/camera_utils';
+import { drawConnectors, drawLandmarks } from '@mediapipe/drawing_utils';
+import { HAND_CONNECTIONS } from '@mediapipe/hands';
 
 // カメラ映像を表示するコンポーネント
+// GLSLのエフェクトを適用するため、Three.js(react-three-fiber)を使用
 const CameraPlane = ({ 
   videoRef, 
   effectId,
@@ -21,17 +23,17 @@ const CameraPlane = ({
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
 
-  // ビデオテクスチャの設定
-  useEffect(() => {
-    if (videoRef.current && videoRef.current.readyState >= 2) {
-      const texture = new THREE.VideoTexture(videoRef.current);
+  // ビデオテクスチャの設定 エフェクト変更時に実行
+  useEffect(() => { 
+    if (videoRef.current && videoRef.current.readyState >= 2) { // DOM要素があり、現在フレームのデータがあるとき
+      const texture = new THREE.VideoTexture(videoRef.current); //Webカメラ映像をテクスチャに流す
       texture.minFilter = THREE.LinearFilter;
       texture.magFilter = THREE.LinearFilter;
       setVideoTexture(texture);
     }
-  }, [videoRef, videoRef.current?.readyState]);
+  }, [videoRef, videoRef.current?.readyState]);//ここの値が変わるたびに実行
 
-  // 🔗 エフェクトが変更されたときにシェーダーを更新
+  // エフェクトが変更時にシェーダーを更新
   useEffect(() => {
     if (materialRef.current && videoTexture) {
       // getEffect()を使ってwave.tsのエフェクトを取得
@@ -71,7 +73,7 @@ const CameraPlane = ({
     }
   }, [effectId, videoTexture]);
 
-  // アニメーションループ
+  // アニメーションループ(1Fごとに実行)
   useFrame((state) => {
     if (materialRef.current) {
       // GLSLのuTime変数を更新（wave.tsで使用）
@@ -95,9 +97,9 @@ const CameraPlane = ({
       <shaderMaterial
         ref={materialRef}
         uniforms={{
-          uTexture: { value: videoTexture },
-          uTime: { value: 0 },
-          uIntensity: { value: effectIntensity }
+          uTexture: { value: videoTexture }, //カメラ映像のテクスチャ
+          uTime: { value: 0 }, //アニメーション用時間
+          uIntensity: { value: effectIntensity } //エフェクト強度
         }}
         vertexShader={`
           varying vec2 vUv;
@@ -117,36 +119,41 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string>('');
-  
+
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
   const [effectIntensity, setEffectIntensity] = useState<number>(1.0);
   
-  // 🔗 getEffectList()を使って利用可能なエフェクト一覧を取得
-  const effectList = getEffectList();  // wave.tsの情報も含まれる
+  // 使って利用可能なエフェクト一覧を取得
+  const effectList = getEffectList();  
   const currentEffect = getEffect(effectId);  // 現在選択されているエフェクト
 
-  const startCamera = async () => {
+  const startCamera = async () => { // カメラアクセスは時間がかかるため非同期で処理
     try {
+      // 1.カメラアクセス要求
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 }
         }
       });
-      
+
+      // 2. video要素に映像を設定
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        videoRef.current.srcObject = stream; // カメラ映像を設定
         
+        // 3. イベントリスナー設定
         videoRef.current.addEventListener('loadedmetadata', () => {
           setDebugInfo(`ビデオサイズ: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`);
         });
 
         videoRef.current.addEventListener('canplay', () => {
-          setIsStreaming(true);
+          setIsStreaming(true);// CameraPlaneのレンダリング
+          // initializeMediaPipe();
         });
       }
     } catch (error) {
+      // 4.エラーハンドリング 
       console.error('カメラアクセスエラー:', error);
       setDebugInfo(`エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
     }
@@ -164,7 +171,7 @@ function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* デバッグ用ビデオ */}
+      {/* デバッグ用ビデオ(右上) */}
       <video
         ref={videoRef}
         autoPlay
@@ -174,26 +181,26 @@ function App() {
           position: 'absolute',
           top: '10px',
           right: '10px',
-          width: '200px',
-          height: '150px',
+          width: '160px',
+          height: '90px',
           border: '2px solid red',
           zIndex: 1000,
           transform: 'scaleX(-1)'
         }}
       />
       
-      {/* Canvas */}
+      {/* Canvas(メインの表示) */}
       <Canvas 
         camera={{ position: [0, 0, 2] }}
         style={{ background: '#333' }}
       >
         <ambientLight intensity={0.5} />
         
-        {/* 🔗 ここでwave.tsのエフェクトが適用される */}
+        {/* エフェクト 適用 */}
         {isStreaming && (
           <CameraPlane 
             videoRef={videoRef} 
-            effectId={effectId}        // 'wave' が渡される
+            effectId={effectId} // 'wave' が渡される
             effectIntensity={effectIntensity}
           />
         )}
@@ -245,7 +252,7 @@ function App() {
           )}
         </div>
         
-        {/* 🔗 エフェクト選択（wave.tsも含まれる） */}
+        {/* エフェクト選択 */}
         <div style={{ marginBottom: '20px' }}>
           <h3 style={{ margin: '0 0 10px 0' }}>エフェクト</h3>
           <select
