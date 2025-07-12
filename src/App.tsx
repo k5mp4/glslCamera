@@ -119,8 +119,8 @@ function App() {
   // handlandmarkerテスト
   const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
   // デバッグ用
-  console.log('MediaPipe状態:', { handResults, isInitialized, error });
-
+  // console.log('MediaPipe状態:', { handResults, isInitialized, error });
+  
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
   const [effectIntensity, setEffectIntensity] = useState<number>(1.0);
@@ -339,6 +339,15 @@ function App() {
           <div>現在のエフェクト: {currentEffect?.info.name}</div>
           <div>エフェクトID: {effectId}</div>
           <div>デバッグ: {debugInfo}</div>
+          {/* 手の詳細情報 */}
+          {handResults?.landmarks?.map((hand, index) => (
+            <div key={index} style={{ fontSize: '10px', color: '#ccc' }}>
+              手{index + 1} - 手首: 
+              x:{hand[0]?.x?.toFixed(2)} 
+              y:{hand[0]?.y?.toFixed(2)}
+            </div>
+          ))}
+
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { FilesetResolver, HandLandmarker} from '@mediapipe/tasks-vision'
+import { FilesetResolver, HandLandmarker, type HandLandmarkerResult } from '@mediapipe/tasks-vision'
 
 export const useMediaPipeHands = (
     videoRef: React.RefObject<HTMLVideoElement | null>,
@@ -45,28 +45,36 @@ export const useMediaPipeHands = (
     const detectHands = useCallback(() => {
         if (!isStreaming || !handLandmarkerRef.current || !videoRef.current) return;
 
+        // ✅ video要素の詳細チェック
+        const video = videoRef.current;
+        if (video.readyState < 2 ||
+            !video.srcObject ||
+            video.videoWidth === 0 ||
+            video.videoHeight === 0 ||
+            video.paused ||
+            video.ended) {
+            return; // 無効な状態では処理をスキップ
+        }
+
         try {
             const results = handLandmarkerRef.current.detectForVideo(
-                videoRef.current,
+                video,
                 performance.now()
             );
-            // ✅ 手が検出されたときのログ
+            // ✅ 手が検出されたときのみログ
             if (results.landmarks && results.landmarks.length > 0) {
                 console.log('手が検出されました！', {
                     検出された手の数: results.landmarks.length,
-                    // 各手の最初のランドマーク（手首）の座標
-                    手の位置: results.landmarks.map((hand, index) => ({
-                        手番号: index + 1,
-                        手首座標: hand[0], // 手首の座標（x, y, z）
-                        全ランドマーク数: hand.length
-                    }))
+                    時刻: new Date().toLocaleTimeString()
                 });
             }
-            setHandResults(results);
+                setHandResults(results);
         } catch (err) {
-            console.error('検出エラー :', err);
+            if (isStreaming) {
+                console.error('検出エラー:', err);
+            }
         }
-    }, []);
+    }, [isStreaming]);
 
     // 定期実行
     useEffect(() => {
@@ -92,5 +100,5 @@ export const useMediaPipeHands = (
         error
     };
 
-    
+
 };
