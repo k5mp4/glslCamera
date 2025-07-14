@@ -17,7 +17,6 @@ export const useMediaPipeHands = (
             const vision = await FilesetResolver.forVisionTasks(
                 "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
             );
-
             const landmarker = await HandLandmarker.createFromOptions(vision, {
                 baseOptions: {
                     modelAssetPath: "../hand_landmarker.task",
@@ -44,24 +43,12 @@ export const useMediaPipeHands = (
     // 手の検出処理
     const detectHands = useCallback(() => {
         if (!isStreaming || !handLandmarkerRef.current || !videoRef.current) return;
-
-        // ✅ video要素の詳細チェック
-        const video = videoRef.current;
-        if (video.readyState < 2 ||
-            !video.srcObject ||
-            video.videoWidth === 0 ||
-            video.videoHeight === 0 ||
-            video.paused ||
-            video.ended) {
-            return; // 無効な状態では処理をスキップ
-        }
-
         try {
             const results = handLandmarkerRef.current.detectForVideo(
-                video,
+                videoRef.current,
                 performance.now()
             );
-            // ✅ 手が検出されたときのみログ
+            // 手が検出されたときのみログを出す
             if (results.landmarks && results.landmarks.length > 0) {
                 console.log('手が検出されました！', {
                     検出された手の数: results.landmarks.length,
@@ -79,12 +66,11 @@ export const useMediaPipeHands = (
     // 定期実行
     useEffect(() => {
         if (!isInitialized) return;
-
-        const interval = setInterval(detectHands, 16);// 16ms
-        return () => clearInterval(interval);
+        const interval = setInterval(detectHands, 16);// 16ms = 60FPS
+        return () => clearInterval(interval); //クリーンアップ関数
     }, [isInitialized, detectHands]);
 
-    // コンポーネントアンマウント時のクリーンアップ
+    // アンマウント時のクリーンアップ
     useEffect(() => {
         return () => {
             if (handLandmarkerRef.current) {

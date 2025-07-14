@@ -2,10 +2,11 @@ import { useRef, useEffect, useCallback } from 'react';
 import { type HandLandmarkerResult } from '@mediapipe/tasks-vision';
 
 interface UseHandDrawingProps {
+  videoRef: React.RefObject<HTMLVideoElement | null>; // サイズ同期用
   canvasRef: React.RefObject<HTMLCanvasElement | null>;
   handResults: HandLandmarkerResult | null;
   isStreaming: boolean;
-  videoRef: React.RefObject<HTMLVideoElement | null>; // サイズ同期用
+
   drawingOptions?: {
     connectionColor?: string;
     landmarkColor?: string;
@@ -13,6 +14,7 @@ interface UseHandDrawingProps {
     landmarkLineWidth?: number;
     differentiateHands?: boolean;
   };
+  
 }
 
 export const useHandDrawing = ({

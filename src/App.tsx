@@ -30,21 +30,25 @@ const CameraPlane = ({
     }
   }, [videoRef, videoRef.current?.readyState]);//ここの値が変わるたびに実行
 
-  // エフェクトが変更時にシェーダーを更新
+  // 🔧 修正: マテリアル作成・更新をuseEffectのみで行う（JSXとの競合を解消）
   useEffect(() => {
-    if (materialRef.current && videoTexture) {
-      // getEffect()を使ってwave.tsのエフェクトを取得
+    if (videoTexture) {
       const effect = getEffect(effectId);
       
       if (effect) {
         console.log(`エフェクト "${effect.info.name}" を適用中...`);
         console.log('GLSLコード:', effect.fragmentShader);
         
+        // 古いマテリアルを破棄
+        if (materialRef.current) {
+          materialRef.current.dispose();
+        }
+        
         // 新しいシェーダーマテリアルを作成
         const newMaterial = new THREE.ShaderMaterial({
           uniforms: {
             uTexture: { value: videoTexture },
-            uTime: { value: 0 },
+            uTime: { value: 0 }, 
             uIntensity: { value: effectIntensity }
           },
           vertexShader: `
@@ -57,21 +61,20 @@ const CameraPlane = ({
           fragmentShader: effect.fragmentShader,  // ← wave.tsから来たGLSLコード
           transparent: true
         });
-        
-        // 古いマテリアルを破棄
-        materialRef.current.dispose();
+        materialRef.current = newMaterial;
         
         // メッシュのマテリアルを更新
         if (meshRef.current) {
           meshRef.current.material = newMaterial;
-          materialRef.current = newMaterial;
         }
       }
     }
-  }, [effectId, videoTexture]);
+  }, [effectId, videoTexture]); 
 
   // アニメーションループ(1Fごとに実行)
   useFrame((state) => {
+    // console.log('useFrame実行ログ',state.clock.elapsedTime);
+    // console.log('materialRef.current:',materialRef.current);
     if (materialRef.current) {
       // GLSLのuTime変数を更新（wave.tsで使用）
       materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
@@ -91,25 +94,43 @@ const CameraPlane = ({
   return (
     <mesh ref={meshRef} scale={[-1, 1, 1]}>
       <planeGeometry args={[4, 3]} />
-      <shaderMaterial
-        ref={materialRef}
-        uniforms={{
-          uTexture: { value: videoTexture }, //カメラ映像のテクスチャ
-          uTime: { value: 0 }, //アニメーション用時間
-          uIntensity: { value: effectIntensity } //エフェクト強度
-        }}
-        vertexShader={`
-          varying vec2 vUv;
-          void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-          }
-        `}
-        fragmentShader={currentEffect.fragmentShader}  // ← ここでwave.tsのコードが使われる
-        transparent
-      />
+      {/* 🔧 修正: JSXのshaderMaterialを削除（useEffectで動的に設定するため） */}
     </mesh>
   );
+};
+
+// 手の位置を正規化する関数
+const getHandPosition = (handResults: any): { u: number; v: number } => {
+  if (!handResults?.landmarks?.length) {
+    return { u: 0.5, v: 0.5 }; // デフォルト値（中央）
+  }
+
+  // 手首の位置（ランドマーク0）を使用
+  const wrist = handResults.landmarks[0][0];
+  
+  // 左右反転を考慮してu座標を調整
+  const u = 1.0 - wrist.x; // 左右反転
+  const v = wrist.y;       // そのまま
+  
+  return { 
+    u: Math.max(0, Math.min(1, u)), 
+    v: Math.max(0, Math.min(1, v)) 
+  };
+};
+// 手の位置からエフェクト強度を計算する関数
+const calculateEffectIntensity = (handResults: any, baseIntensity: number): number => {
+  if (!handResults?.landmarks?.length) {
+    return 0; // 手が検出されない場合はエフェクトなし
+  }
+
+  const handPos = getHandPosition(handResults);
+  
+  // 縦位置(v)でエフェクト強度を制御
+  // v=0（上）→ 強度0, v=1（下）→ 最大強度
+  const positionBasedIntensity = handPos.v * 2.0; // 0~2の範囲
+  
+  // ベース強度と組み合わせ
+  return Math.min(positionBasedIntensity * baseIntensity, 2.0);
 };
 
 function App() {
@@ -122,7 +143,7 @@ function App() {
   // handlandmarkerテスト
   const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
   
-  // ★ 新しく追加：手の骨格描画フック
+  // 手の骨格描画フック
   const { syncCanvasSize } = useHandDrawing({
     canvasRef,
     handResults,
@@ -140,6 +161,8 @@ function App() {
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
   const [effectIntensity, setEffectIntensity] = useState<number>(1.0);
+   // エフェクト強度の計算を手の位置ベースに変更
+  const handBasedIntensity = calculateEffectIntensity(handResults, effectIntensity);
   
   // 使って利用可能なエフェクト一覧を取得
   const effectList = getEffectList();  
@@ -242,7 +265,7 @@ function App() {
           }}
         />
         
-        {/* ★ 新しく追加：手の骨格表示用Canvas */}
+        {/* 手の骨格表示用Canvas */}
         <canvas
           ref={canvasRef}
           style={{
@@ -264,14 +287,14 @@ function App() {
         camera={{ position: [0, 0, 2] }}
         style={{ background: '#333' }}
       >
-        <ambientLight intensity={0.5} />
+        {/* <ambientLight intensity={0.5} /> */}
         
         {/* エフェクト 適用 */}
         {isStreaming && (
           <CameraPlane 
             videoRef={videoRef} 
             effectId={effectId} // 'wave' が渡される
-            effectIntensity={effectIntensity}
+            effectIntensity={handBasedIntensity} // 手の座標ベースに変更
           />
         )}
       </Canvas>
@@ -357,10 +380,13 @@ function App() {
           )}
         </div>
         
-        {/* エフェクト強度 */}
+        {/* エフェクト強度スライダーのラベルを変更 */}
         <div style={{ marginBottom: '15px' }}>
           <label style={{ display: 'block', marginBottom: '8px' }}>
-            強度: {effectIntensity.toFixed(1)}
+            ベース強度: {effectIntensity.toFixed(1)}
+            {handResults?.landmarks?.length ? 
+              ` → 実際の強度: ${handBasedIntensity.toFixed(1)}` : ''
+            }
           </label>
           <input
             type="range"
@@ -372,14 +398,27 @@ function App() {
             disabled={!isStreaming}
             style={{ width: '100%' }}
           />
+          <div style={{ fontSize: '10px', color: '#ccc', marginTop: '4px' }}>
+            手の縦位置で強度が変わる（上=弱い、下=強い）
+          </div>
         </div>
         
-        {/* ★ 新しく追加：MediaPipe情報 */}
+        
+        {/* 手の位置情報表示を追加 */}
         <div style={{ marginBottom: '15px' }}>
-          <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>手の検出</h3>
+          <h3 style={{ margin: '0 0 10px 0', fontSize: '14px' }}>手による制御</h3>
           <div style={{ fontSize: '12px' }}>
             <div>初期化: {isInitialized ? '✅' : '⏳'}</div>
             <div>検出された手: {handResults?.landmarks?.length || 0}個</div>
+            {handResults?.landmarks?.length > 0 && (
+              <>
+                <div>手の位置: u={getHandPosition(handResults).u.toFixed(2)}, v={getHandPosition(handResults).v.toFixed(2)}</div>
+                <div>位置による強度倍率: {(getHandPosition(handResults).v * 2).toFixed(1)}x</div>
+                <div style={{ color: '#4CAF50' }}>
+                  現在のエフェクト強度: {handBasedIntensity.toFixed(1)}
+                </div>
+              </>
+            )}
             {error && <div style={{ color: '#ff6b6b' }}>エラー: {error}</div>}
           </div>
         </div>
