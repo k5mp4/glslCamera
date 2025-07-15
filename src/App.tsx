@@ -6,13 +6,18 @@ import { useMediaPipeHands } from './hooks/useMediaPipeHands';
 import { useHandDrawing } from './hooks/useHandDrawing'; 
 import { calculateEffectIntensity, getHandPosition } from './utils/calculations';
 import { CameraPlane } from './components/Camera/CameraPlane';
+import { useCamera } from './hooks/useCamera';
 
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoRef2 = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null); //手の骨格描画用Canvas
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [debugInfo, setDebugInfo] = useState<string>('');
+  // const [isStreaming, setIsStreaming] = useState(false);
+  // const [debugInfo, setDebugInfo] = useState<string>('');
+  const {isStreaming, debugInfo, startCamera, stopCamera} = useCamera({
+    width:1280,
+    height:720
+  })
   
   // handlandmarkerテスト
   const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
@@ -42,57 +47,12 @@ function App() {
   const effectList = getEffectList();  
   const currentEffect = getEffect(effectId);  // 現在選択されているエフェクト
 
-  const startCamera = async () => { // カメラアクセスは時間がかかるため非同期で処理
-    try {
-      // 1.カメラアクセス要求
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      });
-
-      // 2. video要素に映像を設定
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream; // カメラ映像を設定
-        
-        // 3. イベントリスナー設定
-        videoRef.current.addEventListener('loadedmetadata', () => {
-          setDebugInfo(`ビデオサイズ: ${videoRef.current?.videoWidth}x${videoRef.current?.videoHeight}`);
-        });
-
-        videoRef.current.addEventListener('canplay', () => {
-          setIsStreaming(true);// CameraPlaneのレンダリング
-        });
-      }
-      if (videoRef2.current){// mediaPipe用のVideoDOM
-        videoRef2.current.srcObject = stream;
-        
-        // ★ 新しく追加：videoRef2のメタデータ読み込み時にCanvasサイズを同期
-        videoRef2.current.addEventListener('loadedmetadata', () => {
-          setTimeout(() => {
-            syncCanvasSize(); // 少し遅延させてから実行
-          }, 100);
-        });
-      }
-    } catch (error) {
-      // 4.エラーハンドリング 
-      console.error('カメラアクセスエラー:', error);
-      setDebugInfo(`エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
-    }
+  const handleStartCamera = () => {
+    startCamera(videoRef, videoRef2, syncCanvasSize);
   };
 
-  const stopCamera = () => {
-    if (videoRef.current?.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-      setIsStreaming(false);
-      setDebugInfo('カメラ停止');
-    }
-    if (videoRef2.current?.srcObject){
-      videoRef2.current.srcObject = null;
-    }
+  const handleStopCamera = () => {
+    stopCamera(videoRef, videoRef2);
   };
 
   return (
@@ -189,7 +149,7 @@ function App() {
         <div style={{ marginBottom: '20px' }}>
           <h3 style={{ margin: '0 0 10px 0' }}>カメラ制御</h3>
           <button
-            onClick={startCamera}
+            onClick={handleStartCamera}
             disabled={isStreaming}
             style={{
               padding: '10px 20px',
@@ -205,7 +165,7 @@ function App() {
           
           {isStreaming && (
             <button
-              onClick={stopCamera}
+              onClick={handleStopCamera}
               style={{
                 padding: '10px 20px',
                 backgroundColor: '#dc3545',
