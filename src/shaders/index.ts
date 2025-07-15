@@ -1,4 +1,4 @@
-// 1. wave.ts からエフェクトをインポート
+// 1. effectsディレクトリからエフェクトをインポート
 import { waveEffect, waveEffectInfo } from './effects/wave';
 import { glitchEffect, glitchEffectInfo } from './effects/glitch';
 import { distortionEffect, distortionEffectInfo } from './effects/distorsion';
@@ -55,11 +55,9 @@ export const effects: Record<string, Effect> = {
       }
     `
   },
-  
-  // 5. wave.ts のエフェクトを組み込む
   wave: {
     info: waveEffectInfo,  // wave.ts から情報を取得
-    fragmentShader: createEffectShader(waveEffect)  // wave.ts のコードを完全なシェーダーに変換
+    fragmentShader: waveEffect  // wave.ts のコードを完全なシェーダーに変換
   },
   glitch: {
     info: glitchEffectInfo,
