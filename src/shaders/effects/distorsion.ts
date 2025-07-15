@@ -1,3 +1,5 @@
+import type { EffectInfo } from "..";
+
 // src/shaders/effects/distortion.ts
 export const distortionEffect = `
   // 歪みエフェクト
@@ -12,7 +14,7 @@ export const distortionEffect = `
   color = texture2D(uTexture, uv);
 `;
 
-export const distortionEffectInfo = {
+export const distortionEffectInfo: EffectInfo = {
   id: 'distortion',
   name: '歪み',
   description: '中心から放射状に歪ませるエフェクト',

@@ -6,6 +6,7 @@ import { distortionEffect, distortionEffectInfo } from './effects/distorsion';
 // 2. 基本のシェーダーテンプレート
 const createEffectShader = (effectCode: string): string => {
   return `
+    precision mediump float;  
     uniform sampler2D uTexture;
     uniform float uTime;
     uniform float uIntensity;

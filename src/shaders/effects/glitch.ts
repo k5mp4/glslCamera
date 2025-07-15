@@ -1,3 +1,5 @@
+import type { EffectInfo } from "..";
+
 export const glitchEffect = `
   // グリッチエフェクト
   float noise = fract(sin(dot(uv.xy + uTime * 0.1, vec2(12.9898, 78.233))) * 43758.5453);
@@ -5,8 +7,7 @@ export const glitchEffect = `
   // ランダムな横線のグリッチ
   if (noise > 0.98 - uIntensity * 0.1) {
     uv.x += (noise - 0.5) * 0.1 * uIntensity;
-  
-  
+  }
   color = texture2D(uTexture, uv);
   
   // RGB分離エフェクト
@@ -21,7 +22,7 @@ export const glitchEffect = `
   }
 `;
 
-export const glitchEffectInfo = {
+export const glitchEffectInfo: EffectInfo = {
   id: 'glitch',
   name: 'グリッチ',
   description: 'デジタルノイズとRGB分離を組み合わせたグリッチエフェクト',

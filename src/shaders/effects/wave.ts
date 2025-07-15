@@ -1,3 +1,5 @@
+import type { EffectInfo } from "..";
+
 export const waveEffect = `
   // 波のエフェクト
   uv.x += sin(uv.y * 10.0 + uTime * 2.0) * 0.02 * uIntensity;
@@ -6,7 +8,7 @@ export const waveEffect = `
   color = texture2D(uTexture, uv);
 `;
 
-export const waveEffectInfo = {
+export const waveEffectInfo : EffectInfo= {
   id: 'wave',
   name: '波',
   description: 'UV座標を波のように変形させるエフェクト',
