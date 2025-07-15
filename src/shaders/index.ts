@@ -70,6 +70,8 @@ export const effects: Record<string, Effect> = {
   }
 };
 
+
+
 // 6. 使いやすい関数を提供
 export const getEffect = (id: string): Effect | null => {
   return effects[id] || null;
