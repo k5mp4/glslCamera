@@ -59,13 +59,9 @@ export const effects: Record<string, Effect> = {
     info: waveEffectInfo,  // wave.ts から情報を取得
     fragmentShader: waveEffect  // wave.ts のコードを完全なシェーダーに変換
   },
-  glitch: {
-    info: glitchEffectInfo,
-    fragmentShader: createEffectShader(glitchEffect)
-  },
   distortion: {
     info: distortionEffectInfo,
-    fragmentShader: createEffectShader(distortionEffect)
+    fragmentShader: distortionEffect
   }
 };
 

@@ -1,19 +1,7 @@
 import type { EffectInfo } from "..";
+import distortionFragmentShader from '../distorsion.frag?raw'
 
-// src/shaders/effects/distortion.ts
-export const distortionEffect = `
-  // 歪みエフェクト
-  vec2 center = vec2(0.5, 0.5);
-  vec2 offset = uv - center;
-  float distance = length(offset);
-  
-  // 放射状の歪み
-  float distortionStrength = sin(distance * 15.0 + uTime * 3.0) * 0.1 * uIntensity;
-  uv = center + offset * (1.0 + distortionStrength);
-  
-  color = texture2D(uTexture, uv);
-`;
-
+export const distortionEffect = distortionFragmentShader;
 export const distortionEffectInfo: EffectInfo = {
   id: 'distortion',
   name: '歪み',
