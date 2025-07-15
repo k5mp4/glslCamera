@@ -35,7 +35,7 @@ export const useMediaPipeHands = (
     }
     // 使用可能になったら
     useEffect(() => {
-        if (isStreaming && videoRef.current?.readyState >= 3) {
+        if (isStreaming && videoRef.current && videoRef.current.readyState >= 3) {
             createHandLandmarker();
         }
     }, [isStreaming, videoRef.current?.readyState])

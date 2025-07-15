@@ -1,28 +1,23 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import * as THREE from 'three';
-import { getEffect, getEffectList } from './shaders';
+import React, { useRef, useState } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { getEffect, getEffectList } from './shaders/index';
 import { useMediaPipeHands } from './hooks/useMediaPipeHands';
 import { useHandDrawing } from './hooks/useHandDrawing';
+import { useCamera } from './hooks/useCamera';
 import { calculateEffectIntensity, getHandPosition } from './utils/calculations';
 import { CameraPlane } from './components/Camera/CameraPlane';
-import { useCamera } from './hooks/useCamera';
 import { ControlPanel } from './components/UI/ControlPanel';
 
 function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoRef2 = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null); //手の骨格描画用Canvas
-  // const [isStreaming, setIsStreaming] = useState(false);
-  // const [debugInfo, setDebugInfo] = useState<string>('');
   const { isStreaming, debugInfo, startCamera, stopCamera } = useCamera({
     width: 1280,
     height: 720
   })
-
   // handlandmarkerテスト
   const { handResults, isInitialized, error } = useMediaPipeHands(videoRef2, isStreaming);
-
   // 手の骨格描画フック
   const { syncCanvasSize } = useHandDrawing({
     canvasRef,
@@ -37,10 +32,10 @@ function App() {
       differentiateHands: true // 左右の手で色を分ける
     }
   });
-
   // エフェクト関連の状態
   const [effectId, setEffectId] = useState<string>('wave');  // デフォルトで波エフェクト
   const [effectIntensity, setEffectIntensity] = useState<number>(1.0);
+
   // エフェクト強度の計算を手の位置ベースに変更
   const handBasedIntensity = calculateEffectIntensity(handResults, effectIntensity);
 
@@ -51,14 +46,13 @@ function App() {
   const handleStartCamera = () => {
     startCamera(videoRef, videoRef2, syncCanvasSize);
   };
-
   const handleStopCamera = () => {
     stopCamera(videoRef, videoRef2);
   };
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'relative' }}>
-      {/* デバッグ用ビデオ(右上) */}
+      {/* 純粋なwebカメラ映像(右上) */}
       <video
         ref={videoRef}
         autoPlay
@@ -76,7 +70,7 @@ function App() {
         }}
       />
 
-      {/* ★ 修正：videoRef2のスタイルを相対位置に変更 */}
+      {/* MediaPipeHandsと重畳するwebカメラ映像 */}
       <div style={{
         position: 'absolute',
         top: '110px',
@@ -100,7 +94,7 @@ function App() {
           }}
         />
 
-        {/* 手の骨格表示用Canvas */}
+        {/* MediaPipeHands表示用Canvas */}
         <canvas
           ref={canvasRef}
           style={{
@@ -122,8 +116,6 @@ function App() {
         camera={{ position: [0, 0, 2] }}
         style={{ background: '#333' }}
       >
-        {/* <ambientLight intensity={0.5} /> */}
-
         {/* エフェクト 適用 */}
         {isStreaming && (
           <CameraPlane
@@ -133,6 +125,7 @@ function App() {
           />
         )}
       </Canvas>
+
       {/*ControlPanelコンポーネントに分離 */}
       <ControlPanel
         // カメラ制御
@@ -140,7 +133,7 @@ function App() {
         debugInfo={debugInfo}
         onStartCamera={handleStartCamera}
         onStopCamera={handleStopCamera}
-        
+
         // エフェクト制御
         effectId={effectId}
         setEffectId={setEffectId}
@@ -149,13 +142,13 @@ function App() {
         handBasedIntensity={handBasedIntensity}
         effectList={effectList}
         currentEffect={currentEffect}
-        
+
         // 手の追跡
         handResults={handResults}
         isInitialized={isInitialized}
         error={error}
         getHandPosition={getHandPosition}
-       />
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { getEffect, getEffectList } from '../../shaders';
+import { getEffect } from '../../shaders/index';
 
 export const CameraPlane = ({
     videoRef,

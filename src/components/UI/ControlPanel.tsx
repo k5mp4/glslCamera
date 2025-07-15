@@ -1,4 +1,5 @@
 // components/UI/ControlPanel.tsx
+import type { HandLandmarkerResult } from '@mediapipe/tasks-vision';
 import React from 'react';
 
 /**
@@ -22,7 +23,7 @@ export interface ControlPanelProps {
   currentEffect: { info: { name: string; description: string } } | null;
   
   // 手の追跡関連
-  handResults: any;
+  handResults: HandLandmarkerResult | null;
   isInitialized: boolean;
   error: string | null;
   getHandPosition: (handResults: any) => { u: number; v: number };
@@ -164,7 +165,8 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         <div style={{ fontSize: '12px' }}>
           <div>初期化: {isInitialized ? '✅' : '⏳'}</div>
           <div>検出された手: {handResults?.landmarks?.length || 0}個</div>
-          {handResults?.landmarks?.length > 0 && (
+          {/* 段階的にnullチェック */}
+          {handResults && handResults.landmarks && handResults.landmarks.length > 0 && (
             <>
               <div>手の位置: u={getHandPosition(handResults).u.toFixed(2)}, v={getHandPosition(handResults).v.toFixed(2)}</div>
               <div>位置による強度倍率: {(getHandPosition(handResults).v * 2).toFixed(1)}x</div>

@@ -15,7 +15,7 @@ const createEffectShader = (effectCode: string): string => {
       vec2 uv = vUv;
       vec4 color;
       
-      ${effectCode}  // ← ここに wave.ts のコードが入る
+      ${effectCode}  // ← ここにGLSLのコードが入る
       
       gl_FragColor = color;
     }
