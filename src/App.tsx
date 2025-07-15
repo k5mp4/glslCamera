@@ -4,7 +4,7 @@ import { getEffect, getEffectList } from './shaders/index';
 import { useMediaPipeHands } from './hooks/useMediaPipeHands';
 import { useHandDrawing } from './hooks/useHandDrawing';
 import { useCamera } from './hooks/useCamera';
-import { calculateEffectIntensity, getHandPosition } from './utils/calculations';
+import { calculateEffectIntensity, getHandPosition, calcTimeIntensity } from './utils/calculations';
 import { CameraPlane } from './components/Camera/CameraPlane';
 import { ControlPanel } from './components/UI/ControlPanel';
 
@@ -38,6 +38,7 @@ function App() {
 
   // エフェクト強度の計算を手の位置ベースに変更
   const handBasedIntensity = calculateEffectIntensity(handResults, effectIntensity);
+  const handBasedTimeIntencity = calcTimeIntensity(handResults);
 
   // 使って利用可能なエフェクト一覧を取得
   const effectList = getEffectList();
@@ -122,6 +123,7 @@ function App() {
             videoRef={videoRef}
             effectId={effectId} // 'wave' が渡される
             effectIntensity={handBasedIntensity} // 手の座標ベースに変更
+            timeIntensity={handBasedTimeIntencity}
           />
         )}
       </Canvas>

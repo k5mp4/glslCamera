@@ -32,5 +32,14 @@ export const calculateEffectIntensity = (handResults: HandLandmarkerResult | nul
   const positionBasedIntensity = handPos.v * 2.0; // 0~2の範囲
   
   // ベース強度と組み合わせ
-  return Math.min(positionBasedIntensity * baseIntensity, 2.0);
+  return Math.min(positionBasedIntensity * baseIntensity, 4.0);
 };
+
+export const calcTimeIntensity = (handResults: HandLandmarkerResult | null): number => {
+  if (!handResults?.landmarks?.length){
+    return 1; // 手が検出されない場合は通常のuTime
+  }
+  const handPos = getHandPosition(handResults);
+
+  return handPos.u * 4;
+}

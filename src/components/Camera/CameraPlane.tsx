@@ -1,5 +1,3 @@
-// カメラ映像を表示するコンポーネント
-// GLSLのエフェクトを適用するため、Three.js(react-three-fiber)を使用
 import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -8,41 +6,41 @@ import { getEffect } from '../../shaders/index';
 export const CameraPlane = ({
     videoRef,
     effectId,
-    effectIntensity
+    effectIntensity,
+    timeIntensity
 }: {
     videoRef: React.RefObject<HTMLVideoElement | null>;
     effectId: string;
     effectIntensity: number;
+    timeIntensity: number;
 }) => {
     const meshRef = useRef<THREE.Mesh>(null);
     const materialRef = useRef<THREE.ShaderMaterial>(null);
     const [videoTexture, setVideoTexture] = useState<THREE.VideoTexture | null>(null);
+    
+    // 時間カウンターを作成
+    const customTimeRef = useRef<number>(0);
 
-    // ビデオテクスチャの設定 エフェクト変更時に実行
     useEffect(() => {
-        if (videoRef.current && videoRef.current.readyState >= 2) { // DOM要素があり、現在フレームのデータがあるとき
-            const texture = new THREE.VideoTexture(videoRef.current); //Webカメラ映像をテクスチャに流す
+        if (videoRef.current && videoRef.current.readyState >= 2) {
+            const texture = new THREE.VideoTexture(videoRef.current);
             texture.minFilter = THREE.LinearFilter;
             texture.magFilter = THREE.LinearFilter;
             setVideoTexture(texture);
         }
-    }, [videoRef, videoRef.current?.readyState]);//ここの値が変わるたびに実行
+    }, [videoRef, videoRef.current?.readyState]);
 
-    // 🔧 修正: マテリアル作成・更新をuseEffectのみで行う（JSXとの競合を解消）
     useEffect(() => {
         if (videoTexture) {
             const effect = getEffect(effectId);
 
             if (effect) {
                 console.log(`エフェクト "${effect.info.name}" を適用中...`);
-                console.log('GLSLコード:', effect.fragmentShader);
 
-                // 古いマテリアルを破棄
                 if (materialRef.current) {
                     materialRef.current.dispose();
                 }
 
-                // 新しいシェーダーマテリアルを作成
                 const newMaterial = new THREE.ShaderMaterial({
                     uniforms: {
                         uTexture: { value: videoTexture },
@@ -52,16 +50,14 @@ export const CameraPlane = ({
                     vertexShader: `
                     varying vec2 vUv;
                     void main() {
-                    vUv = uv;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                    }
-                     `,
-                    fragmentShader: effect.fragmentShader,  // ← wave.tsから来たGLSLコード
+                        vUv = uv;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }`,
+                    fragmentShader: effect.fragmentShader,
                     transparent: true
                 });
                 materialRef.current = newMaterial;
 
-                // メッシュのマテリアルを更新
                 if (meshRef.current) {
                     meshRef.current.material = newMaterial;
                 }
@@ -69,13 +65,14 @@ export const CameraPlane = ({
         }
     }, [effectId, videoTexture]);
 
-    // アニメーションループ(1Fごとに実行)
-    useFrame((state) => {
-        // console.log('useFrame実行ログ',state.clock.elapsedTime);
-        // console.log('materialRef.current:',materialRef.current);
+    // 🔧 Delta時間を使って独自の時間を管理
+    useFrame((state, delta) => {
         if (materialRef.current) {
-            // GLSLのuTime変数を更新（wave.tsで使用）
-            materialRef.current.uniforms.uTime.value = state.clock.elapsedTime;
+            // 前フレームからの経過時間(delta)に速度をかけて加算
+            customTimeRef.current += delta * timeIntensity ;
+            
+            // 独自の時間をシェーダーに渡す
+            materialRef.current.uniforms.uTime.value = customTimeRef.current;
             materialRef.current.uniforms.uIntensity.value = effectIntensity;
         }
 
@@ -92,7 +89,6 @@ export const CameraPlane = ({
     return (
         <mesh ref={meshRef} scale={[-1, 1, 1]}>
             <planeGeometry args={[4, 3]} />
-            {/* 🔧 修正: JSXのshaderMaterialを削除（useEffectで動的に設定するため） */}
         </mesh>
     );
 };
