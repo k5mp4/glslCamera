@@ -1,7 +1,7 @@
 // 1. effectsディレクトリからエフェクトをインポート
 import { waveEffect, waveEffectInfo } from './effects/wave';
-import { glitchEffect, glitchEffectInfo } from './effects/glitch';
 import { distortionEffect, distortionEffectInfo } from './effects/distorsion';
+import { invertColorEffect, invertColorEffectInfo } from './effects/invertColor';
 
 // 2. 基本のシェーダーテンプレート
 const createEffectShader = (effectCode: string): string => {
@@ -62,6 +62,10 @@ export const effects: Record<string, Effect> = {
   distortion: {
     info: distortionEffectInfo,
     fragmentShader: distortionEffect
+  },
+  invertColor: {
+    info: invertColorEffectInfo,
+    fragmentShader: invertColorEffect
   }
 };
 
